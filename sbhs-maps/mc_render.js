@@ -1,283 +1,164 @@
-var canvas;
-var gl;
-var shaderProgram;
-var mvMatrix = mat4.create();
-var mvMatrixStack = [];
-var pMatrix = mat4.create();
-var triangleVertexPositionBuffer;
-var triangleVertexColorBuffer;
-var squareVertexPositionBuffer;
-var squareVertexColorBuffer;
-var squareVertexIndexBuffer;
-var rTri = 0;
-var rSquare = 0;
-var lastTime = 0;
-function mvPushMatrix()
-{
-    var copy = mat4.create();
-    mat4.set(mvMatrix, copy);
-    mvMatrixStack.push(copy);
-}
-function mvPopMatrix()
-{
-    mvMatrix = mvMatrixStack.pop();
-}
+var ME;
+var Map = new Array(6);
+var RenderedFloor = 0;
+var MouseButton = 0;
+var MousePosition = new Point(0, 0);
+var DeltaMouse = new Point(0, 0);
+var PreviousMousePosition = new Point(0, 0);
 function Main()
 {
-    canvas = document.getElementById("studios.vanish.mc");
-    canvas.width = document.body.clientWidth;
-    canvas.height = window.innerHeight - 5;
-
-    var E = new Engine(canvas);
-
-    /*Initialize_GL();
-    Initialize_Shaders();
-    Initialize_Buffers();
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.enable(gl.DEPTH_TEST);
-    Loop();
-    Render();*/
+    var RenderingCanvas = document.getElementById("studios.vanish.mc.3D");
+    RenderingCanvas.addEventListener("mousedown", Event_Down);
+    RenderingCanvas.addEventListener("mouseup", Event_Up);
+    RenderingCanvas.addEventListener("mousemove", Event_Move);
+    RenderingCanvas.addEventListener("mouseover", Event_Move);
+    RenderingCanvas.addEventListener("mousewheel", Event_Wheel);
+    RenderingCanvas.addEventListener("DOMMouseScroll", Event_Wheel);
+    RenderingCanvas.width = document.body.clientWidth;
+    RenderingCanvas.height = window.innerHeight - 5;
+    ME = new Engine(RenderingCanvas);
+    Initialize();
+    MainLoop();
 }
-function Initialize_GL()
+function Initialize()
 {
-    gl = canvas.getContext('webgl');
-    gl.viewportWidth = canvas.width;
-    gl.viewportHeight = canvas.height;
-}
-function Initialize_Shaders()
-{
-    var VertexShader = LoadShader("shader-vertex");
-    var PixelShader = LoadShader("shader-pixel");
-
-    shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, VertexShader);
-    gl.attachShader(shaderProgram, PixelShader);
-    gl.linkProgram(shaderProgram);
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS))
+    var source = "";
+    var raw = new XMLHttpRequest();
+    raw.open("GET", "map.ngm", false);
+    raw.onreadystatechange = function()
     {
-        alert("Could not initialize shaders");
-    }
-    gl.useProgram(shaderProgram);
-    shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "vertexPosition");
-    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
-    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "vertexColor");
-    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
-    shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
-    shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-}
-function LoadShader(id)
-{
-    var ShaderScript = document.getElementById(id);
-    var string = "";
-    var k = ShaderScript.firstChild;
-    while (k)
-    {
-        if (k.nodeType == 3)
+        if (this.readyState == 4)
         {
-            string += k.textContent;
+            if (this.status == 200)
+            {
+                source = raw.responseText;
+            }
         }
-        k = k.nextSibling;
     }
-    var shader;
-    if (ShaderScript.type == "shader/pixel")
+    raw.send(null);
+    var JSONObject = JSON.parse(source);
+    for (var i = 0; i < 6; i++)
     {
-        shader = gl.createShader(gl.FRAGMENT_SHADER);
+        Map[i] = [];
     }
-    else if (ShaderScript.type == "shader/vertex")
+    for (var i = 0; i < JSONObject.nodes.length; i++)
     {
-        shader = gl.createShader(gl.VERTEX_SHADER);
+        var s = 0;
+        var a = 1;
+        var type = "U";
+        if (JSONObject.nodes[i].object.type == "WastedSpace")
+        {
+            s = 0.8745;
+            type = "W";
+        }
+        else if (JSONObject.nodes[i].object.type == "Building")
+        {
+            s = 0.968;
+            type = "B";
+        }
+        else if (JSONObject.nodes[i].object.type == "Path")
+        {
+            s = 1;
+            type = "P";
+        }
+        var vertices = 
+        [
+            new GraphicsVertex(JSONObject.nodes[i].object.BL.x, JSONObject.nodes[i].object.BL.y, JSONObject.nodes[i].object.BL.z, s, s, s, a),
+            new GraphicsVertex(JSONObject.nodes[i].object.TL.x, JSONObject.nodes[i].object.TL.y, JSONObject.nodes[i].object.TL.z, s, s, s, a),
+            new GraphicsVertex(JSONObject.nodes[i].object.TR.x, JSONObject.nodes[i].object.TR.y, JSONObject.nodes[i].object.TR.z, s, s, s, a),
+            new GraphicsVertex(JSONObject.nodes[i].object.BR.x, JSONObject.nodes[i].object.BR.y, JSONObject.nodes[i].object.BR.z, s, s, s, a),
+        ];
+        var indices = 
+        [
+            new Index(0, 1, 2),
+            new Index(0, 2, 3)
+        ];
+        if (vertices[0].Z === vertices[1].Z && vertices[1].Z === vertices[2].Z && vertices[2].Z === vertices[3].Z)
+        {
+            if (vertices[0].Z != -1)
+            {
+                var floor = vertices[0].Z;
+                Map[floor].push(new Object3D(ME, vertices, indices));
+                if (type === "B")
+                {
+                    for (var j = 0; j < vertices.length; j++)
+                    {
+                        vertices[j].Z += 0.01;
+                        vertices[j].R = 0.784;
+                        vertices[j].G = 0.784;
+                        vertices[j].B = 0.784;
+                    }
+                    var v = 
+                    [
+                        vertices[0],
+                        vertices[1],
+                        vertices[1],
+                        vertices[2],
+                        vertices[2],
+                        vertices[3],
+                        vertices[3],
+                        vertices[0],
+                    ];
+                    var k = 
+                    [
+                        new Index(0, 1, 2),
+                        new Index(1, 2, 3),
+                        new Index(2, 3, 4),
+                        new Index(3, 4, 5),
+                        new Index(6, 7, 0),
+                        new Index(7, 0, 1),
+                    ];
+                    Map[floor].push(new Object3D(ME, v, k));
+                    Map[floor][Map[floor].length - 1].RenderMode = "Lines";
+                }
+            }
+        }
     }
-    else
-    {
-        return null;
-    }
-    gl.shaderSource(shader, string);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
-    {
-        alert(gl.getShaderInfoLog(shader));
-        return null;
-    }
-    return shader;
+    ME.Camera.Location.X = 50;
+    ME.Camera.Location.Y = 50;
+    ME.Camera.Location.Z = 200;
+    //ME.Camera.Rotation.X = -60;
 }
-function Initialize_Buffers()
+function Event_Down(event)
 {
-    triangleVertexPositionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
-    var vertices = 
-    [
-        +0.0, +1.0, +0.0,
-        -1.0, -1.0, +0.0,
-        +1.0, -1.0, +0.0
-    ];
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-    triangleVertexPositionBuffer.itemSize = 3;
-    triangleVertexPositionBuffer.numItems = 3;
-
-    triangleVertexColorBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexColorBuffer);
-    var colors = 
-    [
-        1.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0
-    ];
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-    triangleVertexColorBuffer.itemSize = 4;
-    triangleVertexColorBuffer.numItems = 3;
-
-    squareVertexPositionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
-    vertices = 
-    [
-        // Front Face
-        -1.0, -1.0,  1.0,
-        1.0, -1.0,  1.0,
-        1.0,  1.0,  1.0,
-        -1.0,  1.0,  1.0,
-
-        // Back face
-        -1.0, -1.0, -1.0,
-        -1.0,  1.0, -1.0,
-        1.0,  1.0, -1.0,
-        1.0, -1.0, -1.0,
-
-        // Top face
-        -1.0,  1.0, -1.0,
-        -1.0,  1.0,  1.0,
-        1.0,  1.0,  1.0,
-        1.0,  1.0, -1.0,
-
-        // Bottom face
-        -1.0, -1.0, -1.0,
-        1.0, -1.0, -1.0,
-        1.0, -1.0,  1.0,
-        -1.0, -1.0,  1.0,
-
-        // Right face
-        1.0, -1.0, -1.0,
-        1.0,  1.0, -1.0,
-        1.0,  1.0,  1.0,
-        1.0, -1.0,  1.0,
-
-        // Left face
-        -1.0, -1.0, -1.0,
-        -1.0, -1.0,  1.0,
-        -1.0,  1.0,  1.0,
-        -1.0,  1.0, -1.0,
-    ];    
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-    squareVertexPositionBuffer.itemSize = 3;
-    squareVertexPositionBuffer.numItems = 24;
-    
-    squareVertexColorBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexColorBuffer);
-    colors = 
-    [
-        1.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0,
-        
-        1.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0,
-        
-        1.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0,
-        
-        1.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0,
-        
-        1.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0,
-        
-        1.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0,
-    ];
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-    squareVertexColorBuffer.itemSize = 4;
-    squareVertexColorBuffer.numItems = 24;
-
-    squareVertexIndexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, squareVertexIndexBuffer);
-    var squareVertexIndices = 
-    [
-        0, 1, 2,      0, 2, 3,    // Front face
-        4, 5, 6,      4, 6, 7,    // Back face
-        8, 9, 10,     8, 10, 11,  // Top face
-        12, 13, 14,   12, 14, 15, // Bottom face
-        16, 17, 18,   16, 18, 19, // Right face
-        20, 21, 22,   20, 22, 23  // Left face
-    ];
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(squareVertexIndices), gl.STATIC_DRAW);
-    squareVertexIndexBuffer.itemSize = 1;
-    squareVertexIndexBuffer.numItems = 36;
+    MouseButton = 1;
+    PreviousMousePosition = new Point(event.clientX, event.clientY);
 }
-function Loop()
+function Event_Up(event)
 {
-    requestAnimFrame(Loop);
-    Update();
+    MouseButton = 0;
+}
+function Event_Move(event)
+{
+    MousePosition = new Point(event.clientX, event.clientY);
+}
+function Event_Wheel(event)
+{
+    var e = window.event || event;
+	var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+    ME.Camera.Location.Z -= delta;
+}
+function MainLoop()
+{
+    requestAnimFrame(MainLoop);
     Render();
-}
-function Render()
-{
-    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
-    mat4.identity(mvMatrix);
-    mat4.translate(mvMatrix, [0, 0.0, -7.0]);
-    mvPushMatrix();
-    mat4.rotate(mvMatrix, degToRad(rTri), [0, 1, 0]);
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
-    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, triangleVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexColorBuffer);
-    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, triangleVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
-    setMatrixUniforms();
-    gl.drawArrays(gl.LINE_LOOP, 0, triangleVertexPositionBuffer.numItems);
-    mvPopMatrix();
-    mvPushMatrix();
-    mat4.translate(mvMatrix, [0.0, 0.0, 0.0]); //LOCATION
-    mat4.rotate(mvMatrix, degToRad(rSquare), [1, 0, 0]); //REVOLUTION
-    mat4.translate(mvMatrix, [0.0, 0.0, 2.0]); //REVOLUTION RADIUS
-    mat4.rotate(mvMatrix, degToRad(rSquare), [0, 0, 1]); //ROTATION
-    mat4.scale(mvMatrix, [1, 1, 1]); //SCALE
-    gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
-    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, squareVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexColorBuffer);
-    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, squareVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, squareVertexIndexBuffer);
-    setMatrixUniforms();
-    gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-    mvPopMatrix();
+    Update();
 }
 function Update()
 {
-    var timeNow = new Date().getTime();
-    if (lastTime != 0)
+    if (MouseButton == 1)
     {
-        var elapsed = timeNow - lastTime;
-        rTri += (90 * elapsed) / 1000.0;
-        rSquare += (75 * elapsed) / 1000.0;
+        DeltaMouse = new Point(PreviousMousePosition.X - MousePosition.X, PreviousMousePosition.Y - MousePosition.Y);
+        PreviousMousePosition = new Point(MousePosition.X, MousePosition.Y);
+        ME.Camera.Location.X += (DeltaMouse.X * 10) / (500 - ME.Camera.Location.Z);
+        ME.Camera.Location.Y -= (DeltaMouse.Y * 10) / (500 - ME.Camera.Location.Z);
     }
-    lastTime = timeNow;
 }
-function degToRad(degrees)
+function Render()
 {
-    return degrees * Math.PI / 180;
-}
-function setMatrixUniforms()
-{
-    gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
-    gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+    ME.Clear(0.875, 0.875, 0.875, 1);
+    for (var i = 0; i < Map[RenderedFloor].length; i++)
+    {
+        Map[RenderedFloor][i].Render(ME);
+    }
 }
