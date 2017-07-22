@@ -75,8 +75,8 @@ var Engine = class Engine
         this.RenderingCanvas.height = parseInt(style.height);
         this.Device.viewportWidth =  canvas.width;
         this.Device.viewportHeight = canvas.height;
-        this.Shader_Vertex = this.LoadShaderFile(url + "shader.MSV");
-        this.Shader_Pixel = this.LoadShaderFile(url + "shader.MSP");
+        this.Shader_Vertex = this.LoadShaderFile("shader.MSV");
+        this.Shader_Pixel = this.LoadShaderFile("shader.MSP");
         this.Shader_Program = this.Device.createProgram();
         this.Device.attachShader(this.Shader_Program, this.Shader_Vertex);
         this.Device.attachShader(this.Shader_Program, this.Shader_Pixel);
@@ -124,7 +124,7 @@ var Engine = class Engine
         var location = window.location.href.substr(0, window.location.href.lastIndexOf("/"));
         var source = "";
         var raw = new XMLHttpRequest();
-        raw.open("GET", "file", false);
+        raw.open("GET", file, false);
         raw.onreadystatechange = function()
         {
             if (this.readyState == 4)
