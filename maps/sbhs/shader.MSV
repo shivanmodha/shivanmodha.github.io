@@ -1,0 +1,13 @@
+attribute vec3 vertexPosition;
+attribute vec4 vertexColor;
+uniform vec4 oShade;
+uniform mat4 uMVMatrix;
+uniform mat4 uPMatrix;
+varying vec4 vColor;
+varying vec4 vShade;
+void main(void)
+{
+    gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);
+    vColor = vertexColor;
+    vShade = oShade;
+}
