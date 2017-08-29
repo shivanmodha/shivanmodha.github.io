@@ -64,8 +64,8 @@ function Main()
 }
 function UpdateURL()
 {
-    let url = "@" + round(ME.Camera.Location.X, 2) + "," + round(ME.Camera.Location.Y, 2) + "," + round(ME.Camera.Location.Z, 2) + "z" + ((RenderedFloor / 2) + 1);
-    //url += "?graph=" + JSON.stringify(graph.ToJson());
+    let url = "?@" + round(ME.Camera.Location.X, 2) + "," + round(ME.Camera.Location.Y, 2) + "," + round(ME.Camera.Location.Z, 2) + "z" + ((RenderedFloor / 2) + 1);
+    //url += "&graph=" + JSON.stringify(graph.ToJson());
     
     window.dispatchEvent(new CustomEvent("_event_onURLChange", { detail: { camera: round(ME.Camera.Location.X, 2) + ", " + round(ME.Camera.Location.Y, 2) + ", " + round(ME.Camera.Location.Z, 2) } }));
     window.history.replaceState({ "html": url }, "", url)
@@ -80,7 +80,7 @@ function ParseURL()
     if (url.includes("@"))
     {
         let paramstr = url.substring(url.indexOf("@") + 1);
-        if (paramstr.includes("?"))
+        if (paramstr.includes("&"))
         {
             paramstr = paramstr.substring(0, url.indexOf("?"));
         }
@@ -353,9 +353,10 @@ function _event_onNavigationSelect(event)
     }
     else if (navigation === "_navigation_file_link")
     {
-        let url = window.location;
-        url += "@" + round(ME.Camera.Location.X, 2) + "," + round(ME.Camera.Location.Y, 2) + "," + round(ME.Camera.Location.Z, 2) + "z" + ((RenderedFloor / 2) + 1);
-        url += "?graph=" + JSON.stringify(graph.ToJson());
+        console.log(window.location);
+        let url = window.location.origin;
+        url += "/bench/?@" + round(ME.Camera.Location.X, 2) + "," + round(ME.Camera.Location.Y, 2) + "," + round(ME.Camera.Location.Z, 2) + "z" + ((RenderedFloor / 2) + 1);
+        url += "&graph=" + JSON.stringify(graph.ToJson());
         alert(url);
     }
     else if (navigation === "_navigation_about")
