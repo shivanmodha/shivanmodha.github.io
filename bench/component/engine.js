@@ -105,8 +105,8 @@ var Engine = class Engine
         this.RenderingCanvas.height = parseInt(style.height);
         this.Device.viewportWidth =  canvas.width;
         this.Device.viewportHeight = canvas.height;
-        this.Shader_Vertex = this.LoadShaderFile("/component/shader.MSV");
-        this.Shader_Pixel = this.LoadShaderFile("/component/shader.MSP");
+        this.Shader_Vertex = this.LoadShaderFile("/bench/component/shader.MSV");
+        this.Shader_Pixel = this.LoadShaderFile("/bench/component/shader.MSP");
         this.Shader_Program = this.Device.createProgram();
         this.Device.attachShader(this.Shader_Program, this.Shader_Vertex);
         this.Device.attachShader(this.Shader_Program, this.Shader_Pixel);
