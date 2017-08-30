@@ -1,5 +1,6 @@
 let ME;
 let url_base
+let url;
 let clrcol = [0.875, 0.875, 0.875, 1];
 let param = [];
 let PreviousMousePosition = new Point(0, 0);
@@ -24,6 +25,10 @@ let start = null;
 let end = null;
 
 let json;
+
+let cursor_default = new Image;
+let cursor_move = new Image;
+let c = 0;
 
 function Main()
 {
@@ -67,7 +72,13 @@ function UpdateURL()
     let url = "?@" + round(ME.Camera.Location.X, 2) + "," + round(ME.Camera.Location.Y, 2) + "," + round(ME.Camera.Location.Z, 2) + "z" + ((RenderedFloor / 2) + 1);
     //url += "&graph=" + JSON.stringify(graph.ToJson());
     
-    window.dispatchEvent(new CustomEvent("_event_onURLChange", { detail: { camera: round(ME.Camera.Location.X, 2) + ", " + round(ME.Camera.Location.Y, 2) + ", " + round(ME.Camera.Location.Z, 2) } }));
+    window.dispatchEvent(new CustomEvent("_event_onURLChange", {
+        detail: {
+            camera: round(ME.Camera.Location.X, 2) + ", " + round(ME.Camera.Location.Y, 2) + ", " + round(ME.Camera.Location.Z, 2),
+            startNode: start,
+            endNode: end
+        }
+    }));
     window.history.replaceState({ "html": url }, "", url)
 }
 function round(num, p)
@@ -126,6 +137,8 @@ function Initialize()
     {
         graph.FromJson(ME, JSON.parse(json));
     }    
+    cursor_default.src = "/bench/component/cursor/default.png";
+    cursor_move.src = "/bench/component/cursor/move.png";
 }
 function _event_onKeyPress(event)
 {
@@ -357,18 +370,18 @@ function _event_onNavigationSelect(event)
         let url = window.location.origin;
         url += "/bench/?@" + round(ME.Camera.Location.X, 2) + "," + round(ME.Camera.Location.Y, 2) + "," + round(ME.Camera.Location.Z, 2) + "z" + ((RenderedFloor / 2) + 1);
         url += "&graph=" + JSON.stringify(graph.ToJson());
-        alert(url);
+        window.dispatchEvent(new CustomEvent("_event_onSignalURL", { detail: { url: url } }));
     }
     else if (navigation === "_navigation_about")
     {
-        alert("Graph Workbench by Shivan Modha");
+        window.dispatchEvent(new CustomEvent("_event_onSignalAbout", { detail: { } }));
     }
 }
 function _event_onMouseDown(event)
 {
     MouseButton = 1;
     PreviousMousePosition = new Point(event.clientX, event.clientY - offsetY);
-    RC2.style.cursor = "move";
+    c = 1;
 }
 function _event_onTouchDown(event)
 {
@@ -378,7 +391,6 @@ function _event_onMouseUp(event)
 {
     MouseButton = 0;
     UpdateURL();
-    RC2.style.cursor = "Default";
     if (!createNeighbor)
     {
         selectedNode = null;
@@ -399,6 +411,7 @@ function _event_onMouseUp(event)
             }    
         }
     }
+    c = 0;
 }
 function _event_onTouchUp(event)
 {
@@ -479,7 +492,16 @@ function _event_modal_onElementIndexAdd(event)
 }
 function _event_modal_onElementExecuteVertex(event)
 {
-    let code = "[\n" + event.detail.code + "\n]";
+    let c = event.detail.code;
+    while (c.includes("["))
+    {
+        c = c.replace("[", "new GraphicsVertex(");
+    }
+    while (c.includes("]"))
+    {
+        c = c.replace("]", ")");
+    }
+    let code = "[\n" + c + "\n]";
     try
     {
         event.detail.element.Object.Vertices = eval(code);
@@ -492,7 +514,16 @@ function _event_modal_onElementExecuteVertex(event)
 }
 function _event_modal_onElementExecuteIndex(event)
 {
-    let code = "[\n" + event.detail.code + "\n]";
+    let c = event.detail.code;
+    while (c.includes("["))
+    {
+        c = c.replace("[", "new Index(");
+    }
+    while (c.includes("]"))
+    {
+        c = c.replace("]", ")");
+    }
+    let code = "[\n" + c + "\n]";
     try
     {
         event.detail.element.Object.Indices = eval(code);
@@ -561,4 +592,12 @@ function Render()
         ME.Device2D.lineTo(MousePosition.X, MousePosition.Y);
         ME.Device2D.stroke();
     }
-}
+    if (c === 0)
+    {
+        ME.Device2D.drawImage(cursor_default, MousePosition.X - 3, MousePosition.Y - 2, 25, 25);
+    }
+    else if (c === 1)
+    {
+        ME.Device2D.drawImage(cursor_move, MousePosition.X - 15, MousePosition.Y - 15, 30, 30);
+    }
+}    
