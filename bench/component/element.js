@@ -4,6 +4,10 @@ let Graph = class Graph
     {
         this.Nodes = [];
         this.Elements = [];
+        this.RenderedFloor = 1;
+        this.Floors = [
+            ["Default", -100, 100]
+        ];
     }
     CreateNode(_location)
     {
@@ -90,110 +94,139 @@ let Graph = class Graph
         }
         this.SelectedPath.unshift(n);
     }
+    NodeInFloor(n)
+    {
+        if (this.RenderedFloor - 1 >= this.Floors.length)
+        {
+            return false;
+        }
+        if (this.RenderedFloor < 1)
+        {
+            return false;
+        }
+        if ((n.Location.Z > this.Floors[this.RenderedFloor - 1][1]) && (n.Location.Z < this.Floors[this.RenderedFloor - 1][2]))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
     Render(ME, z_rotation)
     {
         for (let i = 0; i < this.Elements.length; i++)
         {
             if (this.Elements[i].Node != null)
             {
-                this.Elements[i].Render(ME);
+                if (this.Elements[i].Node != null && this.NodeInFloor(this.Elements[i].Node))
+                {
+                    this.Elements[i].Render(ME);
+                }    
             }    
         }
         for (let i = 0; i < this.Nodes.length; i++)
         {
-            let p = ME.ProjectVertex(this.Nodes[i].Location, z_rotation);
-            let selected = false;
-            if (this.SelectedPath)
+            if (this.NodeInFloor(this.Nodes[i]))
             {
-                for (let j = 0; j < this.SelectedPath.length; j++)
+                let p = ME.ProjectVertex(this.Nodes[i].Location, z_rotation);
+                let selected = false;
+                if (this.SelectedPath)
                 {
-                    if (this.SelectedPath[j] == this.Nodes[i])
+                    for (let j = 0; j < this.SelectedPath.length; j++)
                     {
-                        selected = true;
+                        if (this.SelectedPath[j] == this.Nodes[i])
+                        {
+                            selected = true;
+                        }
                     }
                 }
-            }
-            for (let j = 0; j < this.Nodes[i].Neighbors.length; j++)
-            {
-                ME.Device2D.beginPath();
-                ME.Device2D.moveTo(p.X, p.Y);
-                let p1 = ME.ProjectVertex(this.Nodes[i].Neighbors[j].EndNode.Location, z_rotation);
-                ME.Device2D.lineTo(p1.X, p1.Y);
-                if (selected && this.NodeInList(this.Nodes[i].Neighbors[j].EndNode, this.SelectedPath))
+                for (let j = 0; j < this.Nodes[i].Neighbors.length; j++)
                 {
-                    ME.Device2D.strokeStyle = '#4682B4';
+                    ME.Device2D.beginPath();
+                    ME.Device2D.moveTo(p.X, p.Y);
+                    let p1 = ME.ProjectVertex(this.Nodes[i].Neighbors[j].EndNode.Location, z_rotation);
+                    ME.Device2D.lineTo(p1.X, p1.Y);
+                    if (selected && this.NodeInList(this.Nodes[i].Neighbors[j].EndNode, this.SelectedPath))
+                    {
+                        ME.Device2D.strokeStyle = '#4682B4';
+                    }
+                    ME.Device2D.stroke();
+                    ME.Device2D.strokeStyle = '#000000';
                 }
-                ME.Device2D.stroke();
-                ME.Device2D.strokeStyle = '#000000';
-            }
+            }    
         }
         for (let i = 0; i < this.Nodes.length; i++)
         {
-            ME.Device2D.beginPath();
-            let p = ME.ProjectVertex(this.Nodes[i].Location, z_rotation);
-            this.Nodes[i].ProjectedLocation = new Vertex(p.X, p.Y, p.Z);
-            ME.Device2D.arc(p.X, p.Y, 5, 0, Math.PI * 2, true);
-            let selected = false;
-            let style = "#000000";
-            if (this.SelectedPath)
+            if (this.NodeInFloor(this.Nodes[i]))
             {
-                for (let j = 0; j < this.SelectedPath.length; j++)
+                ME.Device2D.beginPath();
+                let p = ME.ProjectVertex(this.Nodes[i].Location, z_rotation);
+                this.Nodes[i].ProjectedLocation = new Vertex(p.X, p.Y, p.Z);
+                ME.Device2D.arc(p.X, p.Y, 5, 0, Math.PI * 2, true);
+                let selected = false;
+                let style = "#000000";
+                if (this.SelectedPath)
                 {
-                    if (this.SelectedPath[j] == this.Nodes[i])
+                    for (let j = 0; j < this.SelectedPath.length; j++)
                     {
-                        selected = true;
-                        if (j == 0)
+                        if (this.SelectedPath[j] == this.Nodes[i])
                         {
-                            style = '#9ACD32';
+                            selected = true;
+                            if (j == 0)
+                            {
+                                style = '#9ACD32';
+                            }
+                            else if (j == this.SelectedPath.length - 1)
+                            {
+                                style = '#B22222';
+                            }
+                            else
+                            {
+                                style = '#4682B4';
+                            }
+                            break;
                         }
-                        else if (j == this.SelectedPath.length - 1)
-                        {
-                            style = '#B22222';
-                        }
-                        else
-                        {
-                            style = '#4682B4';
-                        }
-                        break;
                     }
                 }
-            }
-            let sel = false;
-            if (this.Nodes[i].Selected == true)
-            {
-                sel = true;
-                style = '#FFA500';
-            }
-            else if (this.Nodes[i].Hovered == true)
-            {
-                sel = true;
-                style = '#C8A500';
-            }
-            if (sel || selected)
-            {
-                ME.Device2D.fillStyle = style;
-                ME.Device2D.fill();
-            }
-            else
-            {
-                ME.Device2D.strokeStyle = style;
-                ME.Device2D.stroke();
-            }
-            ME.Device2D.textAlign = "center";
-            let x = new Number(this.Nodes[i].Location.X).toFixed(1);
-            let y = new Number(this.Nodes[i].Location.Y).toFixed(1);
-            let z = new Number(this.Nodes[i].Location.Z).toFixed(1);
-            this.Nodes[i].Location = new Vertex(parseFloat(x), parseFloat(y), parseFloat(z));
-            ME.Device2D.fillText("'" + this.Nodes[i].Name + "' = (" + x + ", " + y + ", " + z + ")", p.X, p.Y + 20);
-            ME.Device2D.fillStyle = '#000000';
-            ME.Device2D.strokeStyle = '#000000';
+                let sel = false;
+                if (this.Nodes[i].Selected == true)
+                {
+                    sel = true;
+                    style = '#FFA500';
+                }
+                else if (this.Nodes[i].Hovered == true)
+                {
+                    sel = true;
+                    style = '#C8A500';
+                }
+                if (sel || selected)
+                {
+                    ME.Device2D.fillStyle = style;
+                    ME.Device2D.fill();
+                }
+                else
+                {
+                    ME.Device2D.strokeStyle = style;
+                    ME.Device2D.stroke();
+                }
+                ME.Device2D.textAlign = "center";
+                let x = new Number(this.Nodes[i].Location.X).toFixed(1);
+                let y = new Number(this.Nodes[i].Location.Y).toFixed(1);
+                let z = new Number(this.Nodes[i].Location.Z).toFixed(1);
+                this.Nodes[i].Location = new Vertex(parseFloat(x), parseFloat(y), parseFloat(z));
+                ME.Device2D.fillText("'" + this.Nodes[i].Name + "' = (" + x + ", " + y + ", " + z + ")", p.X, p.Y + 20);
+                ME.Device2D.fillStyle = '#000000';
+                ME.Device2D.strokeStyle = '#000000';
+            }    
         }
     }
     ToJson()
     {
         let js = {
             "nodes": [],
-            "maxid": nID
+            "maxid": nID,
+            "floors": this.Floors
         };
         for (let i = 0; i < this.Nodes.length; i++)
         {
@@ -255,6 +288,10 @@ let Graph = class Graph
     FromJson(ME, js)
     {
         nID = js["maxid"];
+        if (js["floors"])
+        {
+            this.Floors = js["floors"];
+        }
         for (let i = 0; i < js["nodes"].length; i++)
         {
             let n = new Node(js["nodes"][i]["name"], new Vertex(js["nodes"][i]["location"]["x"], js["nodes"][i]["location"]["y"], js["nodes"][i]["location"]["z"]));

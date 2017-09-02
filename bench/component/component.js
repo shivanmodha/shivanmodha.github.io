@@ -30,6 +30,10 @@ let cursor_default = new Image;
 let cursor_move = new Image;
 let c = 0;
 
+let cinj = "";
+
+let RenderedFloor = 1;
+
 function Main()
 {
     graph = new Graph();
@@ -47,6 +51,8 @@ function Main()
     window.addEventListener("_event_element_executeindexcode_", _event_modal_onElementExecuteIndex);
     window.addEventListener("_event_modal_element_delete_", _event_modal_onElementDelete);
     window.addEventListener("_event_modal_bindtonode_", _event_modal_onBindToNode);
+    window.addEventListener("_event_onInjectChange", _event_onInjectChange);
+    window.addEventListener("_event_onSignalFloorChange", _event_onSignalFloorChange);
     RC2.addEventListener("mousedown", _event_onMouseDown);
     RC2.addEventListener("touchstart", _event_onTouchDown);
     RC2.addEventListener("mouseup", _event_onMouseUp);
@@ -67,9 +73,14 @@ function Main()
     MainLoop();
     UpdateURL();
 }
+function EnableCodeInjection()
+{
+    window.dispatchEvent(new CustomEvent("_event_onSignalCodeInjection"), {});
+    return 0;
+}
 function UpdateURL()
 {
-    let url = "?@" + round(ME.Camera.Location.X, 2) + "," + round(ME.Camera.Location.Y, 2) + "," + round(ME.Camera.Location.Z, 2) + "z" + ((RenderedFloor / 2) + 1);
+    let url = "?@" + round(ME.Camera.Location.X, 2) + "," + round(ME.Camera.Location.Y, 2) + "," + round(ME.Camera.Location.Z, 2) + "z" + RenderedFloor;
     //url += "&graph=" + JSON.stringify(graph.ToJson());
     
     window.dispatchEvent(new CustomEvent("_event_onURLChange", {
@@ -105,20 +116,20 @@ function ParseURL()
         {
             tmp_location = new Vertex(parseFloat(param[0]), parseFloat(param[1]), parseFloat(param[2].substring(0, param[2].indexOf("z"))));
             tmp_rotation = new Vertex(0, 0, 0);
-            RenderedFloor = (parseInt(param[2].substring(param[2].indexOf("z") + 1)) - 1) * 2;
+            RenderedFloor = (parseInt(param[2].substring(param[2].indexOf("z") + 1)));
         }
         else
         {
             tmp_location = new Vertex(0, 0, 5);
             tmp_rotation = new Vertex(0, 0, 0);
-            RenderedFloor = 0;
+            RenderedFloor = 1;
         }
     }
     else
     {
         tmp_location = new Vertex(0, 0, 5);
         tmp_rotation = new Vertex(0, 0, 0);
-        RenderedFloor = 0;
+        RenderedFloor = 1;
     }
     let url_search = new URL(url);
     json = url_search.searchParams.get("graph");
@@ -307,6 +318,7 @@ function _event_onNavigationSelect(event)
     else if (navigation === "_navigation_view_resetcamera")
     {
         ME.Camera.Location = new Vertex(0, 0, 5);
+        ME.Camera.Rotation = new Vertex(0, 0, 0);
         UpdateURL();
     }
     else if (navigation === "_navigation_path_start")
@@ -368,13 +380,25 @@ function _event_onNavigationSelect(event)
     {
         console.log(window.location);
         let url = window.location.origin;
-        url += "/bench/?@" + round(ME.Camera.Location.X, 2) + "," + round(ME.Camera.Location.Y, 2) + "," + round(ME.Camera.Location.Z, 2) + "z" + ((RenderedFloor / 2) + 1);
+        url += "/bench/?@" + round(ME.Camera.Location.X, 2) + "," + round(ME.Camera.Location.Y, 2) + "," + round(ME.Camera.Location.Z, 2) + "z" + RenderedFloor;
         url += "&graph=" + JSON.stringify(graph.ToJson());
         window.dispatchEvent(new CustomEvent("_event_onSignalURL", { detail: { url: url } }));
     }
     else if (navigation === "_navigation_about")
     {
         window.dispatchEvent(new CustomEvent("_event_onSignalAbout", { detail: { } }));
+    }
+    else if (navigation === "_navigation_inject")
+    {
+        window.dispatchEvent(new CustomEvent("_event_onSignalShowInject", { detail: { cinj: cinj } }));
+    }
+    else if (navigation === "_navigation_view_camera")
+    {
+        window.dispatchEvent(new CustomEvent("_event_onSignalCamera", { detail: { camera: ME.Camera } }));
+    }
+    else if (navigation === "_navigation_view_floors")
+    {
+        window.dispatchEvent(new CustomEvent("_event_onSignalFloors", { detail: { floor: RenderedFloor, floors: graph.Floors } }));
     }
 }
 function _event_onMouseDown(event)
@@ -551,6 +575,17 @@ function _event_modal_onBindToNode(event)
 {
     bindtonode = true;
 }
+function _event_onInjectChange(event)
+{
+    cinj = event.detail.cinj;
+}
+function _event_onSignalFloorChange(event)
+{
+    console.log(event.detail.floor);
+    RenderedFloor = parseFloat(event.detail.floor);
+    graph.RenderedFloor = parseFloat(event.detail.floor);
+    UpdateURL();
+}
 function MainLoop()
 {
     requestAnimFrame(MainLoop);
@@ -599,5 +634,13 @@ function Render()
     else if (c === 1)
     {
         ME.Device2D.drawImage(cursor_move, MousePosition.X - 15, MousePosition.Y - 15, 30, 30);
+    }
+    try
+    {
+        eval(cinj);
+    }
+    catch (e)
+    {
+        
     }
 }    
