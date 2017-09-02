@@ -113,6 +113,24 @@ let Graph = class Graph
             return false;
         }
     }
+    DistanceToNode(i, point)
+    {
+        if (this.NodeInFloor(this.Nodes[i]))
+        {
+            if (this.Nodes[i].ProjectedLocation)
+            {
+                return this.Nodes[i].ProjectedLocation.DistanceTo(point);
+            }    
+            else
+            {
+                return Number.MAX_SAFE_INTEGER;
+            }
+        }
+        else
+        {
+            return Number.MAX_SAFE_INTEGER;
+        }
+    }
     Render(ME, z_rotation)
     {
         for (let i = 0; i < this.Elements.length; i++)
@@ -158,11 +176,11 @@ let Graph = class Graph
         }
         for (let i = 0; i < this.Nodes.length; i++)
         {
+            let p = ME.ProjectVertex(this.Nodes[i].Location, z_rotation);
+            this.Nodes[i].ProjectedLocation = new Vertex(p.X, p.Y, p.Z);
             if (this.NodeInFloor(this.Nodes[i]))
             {
                 ME.Device2D.beginPath();
-                let p = ME.ProjectVertex(this.Nodes[i].Location, z_rotation);
-                this.Nodes[i].ProjectedLocation = new Vertex(p.X, p.Y, p.Z);
                 ME.Device2D.arc(p.X, p.Y, 5, 0, Math.PI * 2, true);
                 let selected = false;
                 let style = "#000000";
