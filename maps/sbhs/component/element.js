@@ -1,3 +1,9 @@
+let __DEFAULT_ICON_C_Y__ = new Image();
+__DEFAULT_ICON_C_Y__.src = "/maps/sbhs/component/icons/ico_c_y.png";
+let __DEFAULT_ICON_B_F__ = new Image();
+__DEFAULT_ICON_B_F__.src = "/maps/sbhs/component/icons/ico_b_f.png";
+let __DEFAULT_ICON_B_M__ = new Image();
+__DEFAULT_ICON_B_M__.src = "/maps/sbhs/component/icons/ico_b_m.png";
 let Graph = class Graph
 {
     constructor()
@@ -37,6 +43,20 @@ let Graph = class Graph
         }
         return null;
     }
+    GetElementByNodeID(_id)
+    {
+        for (let i = 0; i < this.Elements.length; i++)
+        {
+            if (this.Elements[i].Node)
+            {
+                if (this.Elements[i].Node.ID === _id)
+                {
+                    return this.Elements[i];
+                }
+            }    
+        }
+        return null;
+    }
     GetAllElements(_name)
     {
         let _return = [];
@@ -51,7 +71,7 @@ let Graph = class Graph
                 if (this.Elements[i].Type === "Room")
                 {
                     _return.push(this.Elements[i]);
-                }    
+                }
             }
         }
         return _return;
@@ -125,6 +145,117 @@ let Graph = class Graph
         }
         this.SelectedPath.unshift(n);
     }
+    GetDynamicDirections()
+    {
+        let _return = [];
+        let DestCall = false;
+        let mag = (a) =>
+        {
+            return Math.sqrt(Math.pow(a.X, 2) + Math.pow(a.Y, 2) + Math.pow(a.Z, 2));
+        }
+        let dist = (a, b) =>
+        {
+            return Math.sqrt(Math.pow(a.X - b.X, 2) + Math.pow(a.Y - b.Y, 2) + Math.pow(a.Z - b.Z, 2));
+        }
+        let cross = (a, b) =>
+        {
+            return new Vertex((a.Y * b.Z) - (a.Z * b.Y), (a.Z * b.X) - (a.X * b.Z), (a.X * b.Y) - (a.Y * b.X));
+        }
+        let dot = (a, b) =>
+        {
+            return (a.X * b.X) + (a.Y * b.Y) + (a.Z * b.Z);
+        }
+        let start = false;
+        if (!this.SelectedPath[1].Name.includes(this.SelectedPath[0].Name))
+        {
+            start = true;
+            _return.push(new DirectionInstruction(this.SelectedPath[1], "Start", dist(this.SelectedPath[0].Location, this.SelectedPath[1].Location), "Head to " + this.SelectedPath[1].Name, this.SelectedPath[0], 0));
+        }
+        for (let i = 1; i < this.SelectedPath.length - 1; i++)
+        {
+            let verb = "to";
+            let parent = this.SelectedPath[i - 1];
+            let current = this.SelectedPath[i];
+            let child = this.SelectedPath[i + 1];
+            if (child.Name.includes("Hall"))
+            {
+                verb = "on";
+            }
+            let vector1 = new Vertex(current.Location.X - parent.Location.X, current.Location.Y - parent.Location.Y, 0);
+            let vector2 = new Vertex(child.Location.X - current.Location.X, child.Location.Y - current.Location.Y, 0);
+            let ang = Math.atan2(mag(cross(vector1, vector2)), dot(vector1, vector2));
+            ang *= 180 / Math.PI;
+            let StraightOffset = 15;
+            if (cross(vector1, vector2).Z > 0)
+            {
+                ang *= -1;
+            }
+            if (!start && i === 1)
+            {
+                _return.push(new DirectionInstruction(child, "Start", dist(current.Location, child.Location), "Head to " + child.Name, current, ang));
+            }
+            else
+            {
+                let displayName = child.Name;
+                if (displayName.includes(" Entrance"))
+                {
+                    displayName = displayName.replace(" Entrance", "");
+                }
+                if (current.Location.Z === child.Location.Z || Math.abs(current.Location.Z - child.Location.Z) < 0.25)
+                {
+                    if ((ang > -StraightOffset) && (ang < StraightOffset))
+                    {
+                        if (_return[_return.length - 1].NodeName === child.Name && _return[_return.length - 1].Direction != "Straight")
+                        {
+                            _return.push(new DirectionInstruction(child, "Straight", dist(current.Location, child.Location), "Keep Straight", current, ang));
+                        }
+                        else
+                        {
+                            if (i !== this.SelectedPath.length - 2)
+                            {
+                                if (_return[_return.length - 1].NodeName !== child.Name)
+                                {
+                                    //_return.push(new DirectionInstruction(child, "Straight", dist(current.Location, child.Location), "Straight to " + displayName, current, ang));
+                                }
+                            }
+                            else
+                            {
+                                //DestCall = true;
+                                //_return.push(new DirectionInstruction(child, "Straight", dist(current.Location, child.Location), "Destination Straight Ahead", current, ang));
+                            }
+                        }
+                    }
+                    else if (ang < -StraightOffset)
+                    {
+                        _return.push(new DirectionInstruction(child, "Left", dist(current.Location, child.Location), "Left " + verb + " " + displayName, current, ang));
+                    }
+                    else if (ang > StraightOffset)
+                    {
+                        _return.push(new DirectionInstruction(child, "Right", dist(current.Location, child.Location), "Right " + verb + " " + displayName, current, ang));
+                    }
+                }
+                else if (current.Location.Z < child.Location.Z)
+                {
+                    if (!_return[_return.length - 1].NodeName.includes(child.Name) || child.Name.includes("Stairs"))
+                    {
+                        _return.push(new DirectionInstruction(child, "Up", dist(current.Location, child.Location), "Up " + displayName, current, ang));
+                    }
+                }
+                else if (current.Location.Z > child.Location.Z)
+                {
+                    if (!_return[_return.length - 1].NodeName.includes(child.Name) || child.Name.includes("Stairs"))
+                    {
+                        _return.push(new DirectionInstruction(child, "Down", dist(current.Location, child.Location), "Down " + displayName, current, ang));
+                    }
+                }    
+            }
+        }
+        if (!DestCall)
+        {
+            _return.push(new DirectionInstruction(this.SelectedPath[this.SelectedPath.length - 1], "Destination", 0, "You have arrived", this.SelectedPath[this.SelectedPath.length - 2], 0));
+        }
+        return _return;
+    }
     GetFloor(n)
     {
         for (let i = 0; i < this.Floors.length; i++)
@@ -155,13 +286,13 @@ let Graph = class Graph
             return false;
         }
     }
-    DistanceToNode(i, point)
+    DistanceToNode(node, point)
     {
-        if (this.NodeInFloor(this.Nodes[i]))
+        if (this.NodeInFloor(node))
         {
-            if (this.Nodes[i].ProjectedLocation)
+            if (node.ProjectedLocation)
             {
-                return this.Nodes[i].ProjectedLocation.DistanceTo(point);
+                return node.ProjectedLocation.DistanceTo(point);
             }
             else
             {
@@ -173,8 +304,13 @@ let Graph = class Graph
             return Number.MAX_SAFE_INTEGER;
         }
     }
+    DistanceToNodeIndex(i, point)
+    {
+        DistanceToNode(this.Nodes[i], point);
+    }
     Render(ME, z_rotation)
     {
+        let scale = Math.pow(1.039, -ME.Camera.Location.Z + 135) + 10;
         for (let i = 0; i < this.Elements.length; i++)
         {
             if (this.Elements[i].Node != null)
@@ -185,6 +321,7 @@ let Graph = class Graph
                     if (this.Elements[i].Type === "Room")
                     {
                         let p = ME.ProjectVertex(this.Elements[i].Object.Location, z_rotation);
+                        this.Elements[i].Node.ProjectedLocation = p;
                         if (this.Elements[i].Name.includes("("))
                         {
                             let name = this.Elements[i].Name;
@@ -193,11 +330,32 @@ let Graph = class Graph
                             ME.Device2D.font = (this.Scale / 2).toString() + "px Calibri";
                             ME.Device2D.fillText(name.substring(name.indexOf("(") + 1, name.length - 1), p.X, p.Y + this.Scale);
                             ME.Device2D.font = this.Scale.toString() + "px Calibri";
+                            this.Elements[i].Node.TextSize = this.Scale * 1.25;
                         }
                         else
                         {
+                            this.Elements[i].Node.TextSize = this.Scale;
                             ME.Device2D.textAlign = "center";
                             ME.Device2D.fillText(this.Elements[i].Name, p.X, p.Y + (this.Scale / 2));
+                        }
+                    }
+                    else if (this.Elements[i].Type === "Court Yard")
+                    {
+                        let p = ME.ProjectVertex(this.Elements[i].Object.Location, z_rotation);
+                        this.Elements[i].Node.ProjectedLocation = p;
+                        ME.Device2D.drawImage(__DEFAULT_ICON_C_Y__, p.X - (scale / 2), p.Y - (scale / 2), scale, scale);
+                    }
+                    else if (this.Elements[i].Type === "Bathroom")
+                    {
+                        let p = ME.ProjectVertex(this.Elements[i].Object.Location, z_rotation);
+                        this.Elements[i].Node.ProjectedLocation = p;
+                        if (this.Elements[i].Name.includes("(G)"))
+                        {
+                            ME.Device2D.drawImage(__DEFAULT_ICON_B_F__, p.X - (scale / 2), p.Y - (scale / 2), scale, scale);
+                        }    
+                        else if (this.Elements[i].Name.includes("(B)"))
+                        {
+                            ME.Device2D.drawImage(__DEFAULT_ICON_B_M__, p.X - (scale / 2), p.Y - (scale / 2), scale, scale);
                         }    
                     }
                 }
@@ -224,7 +382,7 @@ let Graph = class Graph
                     p1 = ME.ProjectVertex(this.SelectedPath[i + 1].Location, z_rotation);
                 }
             }
-        }    
+        }
     }
     ToJson()
     {
@@ -400,5 +558,18 @@ let Element = class Element
     {
         this.Object.Location = this.Node.Location;
         this.Object.Render(ME);
+    }
+}
+let DirectionInstruction = class DirectionInstruction
+{
+    constructor(node, direction, distance, instruction, cnode, angle)
+    {
+        this.NodeName = node.Name;
+        this.Node = node;
+        this.Distance = distance;
+        this.Direction = direction;
+        this.Instruction = instruction;
+        this.CNode = cnode;
+        this.angle = angle;
     }
 }
