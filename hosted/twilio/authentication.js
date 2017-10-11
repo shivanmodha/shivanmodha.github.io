@@ -1,0 +1,2 @@
+const USERNAME = "AC0c49acb9cb278c75eabae00a1355a1a2";
+const PASSWORD = "d7cbccf30126427996d2eeb1b415f49e";
