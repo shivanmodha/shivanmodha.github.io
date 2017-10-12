@@ -1,7 +1,7 @@
 const wrdCont = document.getElementById("wordle-container");
 const SIZE = 20;
-let lSize = -1;
-let start = 0;
+let lastURI = "";
+let start = 51;
 function main()
 {
     wrdCont.width = window.innerWidth;
@@ -9,35 +9,57 @@ function main()
     let repeatedFunc = function ()
     {
         twilioGetMessages();
-        setTimeout(repeatedFunc, 5000);
+        setTimeout(repeatedFunc, 2000);
     }
     window.addEventListener("onRecieved", (event) =>
     {
         let rawMessages = event.detail.obj.messages;
-        if (lSize != rawMessages.length)
+        console.log(rawMessages.length);
+        if (lastURI != rawMessages[0]["uri"])
         {
-            if (lSize === -1)
+            start--;
+            if (start < 0)
             {
-                start = rawMessages.length;
+                start = 0;
             }    
             let list = [];
             for (let i = 0; i < rawMessages.length - start; i++)
             {
                 if (rawMessages[i]["direction"] === "inbound")
                 {
-                    list = addTolist(list, rawMessages[i]["body"]);
+                    let msg = rawMessages[i]["body"];
+                    let words = msg.split(" ");
+                    for (let j = 0; j < words.length; j++)
+                    {
+                        if (!filtered(words[j]))
+                        {
+                            list = addTolist(list, words[j]);
+                        }    
+                    }
                 }
             }
-            if (lSize === -1)
+            if (lastURI === "")
             {
                 list = [["(908) 332-5411", 70], ["Text", 50], ["Powered by Twilio", 10], ["Demo by Shivan Modha", 10]];
-            }    
+            }
             setWordle(list);
-            lSize = rawMessages.length;
-        }    
+            lastURI = rawMessages[0]["uri"];
+        }
     });
     setWordle([]);
     repeatedFunc();
+}
+function filtered(add)
+{
+    let chck = " " + add + " ";
+    for (let i = 0; i < FILTER.length; i++)
+    {
+        if (add.toLowerCase().search(new RegExp(FILTER[i].toLowerCase(), "i")) > -1)
+        {
+            return true;
+        }    
+    }    
+    return false;
 }
 function addTolist(list, add)
 {
@@ -54,7 +76,7 @@ function addTolist(list, add)
     if (!adIn)
     {
         list.push([add, SIZE]);
-    }    
+    }
     return list;
 }
 function setWordle(list)
@@ -72,6 +94,7 @@ function twilioGetMessages()
         {
             window.dispatchEvent(new CustomEvent("onRecieved", { detail: { obj: JSON.parse(request.response) } }));
         }
+        console.log(request);
     };
     request.send();
 }
