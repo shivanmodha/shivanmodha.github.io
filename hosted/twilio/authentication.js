@@ -325,7 +325,6 @@ const FILTER = [
     "he11",
     "hebe",
     "heeb",
-    "hell",
     "hemp",
     "heroin",
     "herp",
