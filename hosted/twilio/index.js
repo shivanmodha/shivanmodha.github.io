@@ -1,7 +1,7 @@
 const wrdCont = document.getElementById("wordle-container");
 const SIZE = 20;
 let lastURI = "";
-let start = 51;
+let start = 101;
 function main()
 {
     wrdCont.width = window.innerWidth;
@@ -40,7 +40,7 @@ function main()
             }
             if (lastURI === "")
             {
-                list = [["(908) 332-5411", 70], ["Text", 50], ["Powered by Twilio", 10], ["Demo by Shivan Modha", 10]];
+                list = [["(267) 619-7204", 70], ["Text", 50], ["Powered by Twilio", 10], ["Demo by Shivan Modha", 10]];
             }
             setWordle(list);
             lastURI = rawMessages[0]["uri"];
@@ -56,7 +56,10 @@ function filtered(add)
     {
         if (add.toLowerCase().search(new RegExp(FILTER[i].toLowerCase(), "i")) > -1)
         {
-            return true;
+            if (add.length < 1)
+            {
+                return true;
+            }
         }    
     }    
     return false;
@@ -86,7 +89,7 @@ function setWordle(list)
 function twilioGetMessages()
 {
     let request = new XMLHttpRequest();
-    request.open("GET", "https://api.twilio.com/2010-04-01/Accounts/" + USERNAME + "/Messages.json", true);
+    request.open("GET", "https://api.twilio.com/2010-04-01/Accounts/" + USERNAME + "/Messages.json?PageSize=100&Page=0", true);
     request.setRequestHeader("Authorization", "Basic " + btoa(USERNAME + ":" + PASSWORD));
     request.onload = function(event)
     {
