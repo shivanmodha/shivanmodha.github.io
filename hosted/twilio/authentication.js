@@ -1,5 +1,5 @@
-const USERNAME = "AC0c49acb9cb278c75eabae00a1355a1a2";
-const PASSWORD = "d7cbccf30126427996d2eeb1b415f49e";
+const USERNAME = "ACf57b31acb731eab25716c851792ce29a";
+const PASSWORD = "56ee120539d3900a260045e9fb0c9556";
 const FILTER = [
     "a55",
     "a55hole",
@@ -722,5 +722,9 @@ const FILTER = [
     "xxx",
     "yeasty",
     "yobbo",
-    "zoophile"
+    "zoophile",
+    "shivan",
+    "kevin",
+    "tanvi",
+    "swap"
 ];
