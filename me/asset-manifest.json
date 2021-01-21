@@ -1,23 +1,23 @@
 {
   "files": {
-    "main.css": "/me/static/css/main.c596bf46.chunk.css",
-    "main.js": "/me/static/js/main.73a1f8c5.chunk.js",
+    "main.css": "/me/static/css/main.27660faa.chunk.css",
+    "main.js": "/me/static/js/main.e7f5708b.chunk.js",
     "runtime-main.js": "/me/static/js/runtime-main.8e474a00.js",
     "static/css/2.30ccea34.chunk.css": "/me/static/css/2.30ccea34.chunk.css",
-    "static/js/2.ff0855b3.chunk.js": "/me/static/js/2.ff0855b3.chunk.js",
+    "static/js/2.c8433b61.chunk.js": "/me/static/js/2.c8433b61.chunk.js",
     "index.html": "/me/index.html",
-    "precache-manifest.c37c7815393d8b454d4775563f174541.js": "/me/precache-manifest.c37c7815393d8b454d4775563f174541.js",
+    "precache-manifest.788ec05ba1af4aecec61320de2971fb4.js": "/me/precache-manifest.788ec05ba1af4aecec61320de2971fb4.js",
     "service-worker.js": "/me/service-worker.js",
-    "static/js/2.ff0855b3.chunk.js.LICENSE.txt": "/me/static/js/2.ff0855b3.chunk.js.LICENSE.txt",
-    "static/media/background.jpg": "/me/static/media/background.86d88c37.jpg",
+    "static/js/2.c8433b61.chunk.js.LICENSE.txt": "/me/static/js/2.c8433b61.chunk.js.LICENSE.txt",
+    "static/media/background.jpg": "/me/static/media/background.dd22c980.jpg",
     "static/media/font-awesome.css": "/me/static/media/fontawesome-webfont.fee66e71.woff",
     "static/media/hackru.jpg": "/me/static/media/hackru.c03c454d.jpg"
   },
   "entrypoints": [
     "static/js/runtime-main.8e474a00.js",
     "static/css/2.30ccea34.chunk.css",
-    "static/js/2.ff0855b3.chunk.js",
-    "static/css/main.c596bf46.chunk.css",
-    "static/js/main.73a1f8c5.chunk.js"
+    "static/js/2.c8433b61.chunk.js",
+    "static/css/main.27660faa.chunk.css",
+    "static/js/main.e7f5708b.chunk.js"
   ]
 }
