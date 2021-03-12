@@ -1,0 +1,17 @@
+{
+  "files": {
+    "main.js": "/maze/static/js/main.df4788aa.chunk.js",
+    "main.js.map": "/maze/static/js/main.df4788aa.chunk.js.map",
+    "runtime-main.js": "/maze/static/js/runtime-main.82448424.js",
+    "runtime-main.js.map": "/maze/static/js/runtime-main.82448424.js.map",
+    "static/js/2.c28f4d91.chunk.js": "/maze/static/js/2.c28f4d91.chunk.js",
+    "static/js/2.c28f4d91.chunk.js.map": "/maze/static/js/2.c28f4d91.chunk.js.map",
+    "index.html": "/maze/index.html",
+    "static/js/2.c28f4d91.chunk.js.LICENSE.txt": "/maze/static/js/2.c28f4d91.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.82448424.js",
+    "static/js/2.c28f4d91.chunk.js",
+    "static/js/main.df4788aa.chunk.js"
+  ]
+}
